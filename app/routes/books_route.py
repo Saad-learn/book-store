@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 from typing import List
 from app.database import get_db
-from app.schemas import book_sch
-from app.models import author_mdl, books_mdl
+from app.schemas import BookDTO
+from app.models import Author, Book
 
 router = APIRouter(
     prefix="/books",
@@ -11,42 +11,42 @@ router = APIRouter(
 )
 
 def check_author_exists(db: Session, author_id: int):
-    author = db.query(author_mdl.Author).filter(author_mdl.Author.id == author_id).first()
+    author = db.query(Author).filter(Author.id == author_id).first()
     if not author:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, 
             detail=f"Author with id {author_id} does not exist."
         )
 
-@router.post("/", response_model=book_sch.Book, status_code=status.HTTP_201_CREATED)
-def create_book(book: book_sch.BookCreate, db: Session = Depends(get_db)):
+@router.post("/", response_model=BookDTO, status_code=status.HTTP_201_CREATED)
+def create_book(book: BookDTO, db: Session = Depends(get_db)):
     """Create a new book, ensuring the author_id is valid."""
     check_author_exists(db, book.author_id)
     
-    db_book = book_sch.Book(**book.model_dump())
+    db_book = Book(**book.model_dump())
     db.add(db_book)
     db.commit()
     db.refresh(db_book)
     return db_book
 
-@router.get("/", response_model=List[book_sch.Book])
+@router.get("/", response_model=List[BookDTO])
 def read_books(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Retrieve a list of all books, including author details."""
-    books = db.query(book_sch.Book).options(joinedload(book_sch.Book.author)).offset(skip).limit(limit).all()
+    books = db.query(Book).options(joinedload(Book.author)).offset(skip).limit(limit).all()
     return books
 
-@router.get("/{book_id}", response_model=book_sch.Book)
+@router.get("/{book_id}", response_model=BookDTO)
 def read_book(book_id: int, db: Session = Depends(get_db)):
     """Retrieve a single book by ID, including author details."""
-    book = db.query(book_sch.Book).options(joinedload(book_sch.Book.author)).filter(book_sch.Book.id == book_id).first()
+    book = db.query(Book).options(joinedload(Book.author)).filter(Book.id == book_id).first()
     if book is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
     return book
 
-@router.put("/{book_id}", response_model=book_sch.Book)
-def update_book(book_id: int, book_update:book_sch.BookUpdate, db: Session = Depends(get_db)):
+@router.put("/{book_id}", response_model=BookDTO)
+def update_book(book_id: int, book_update:BookDTO, db: Session = Depends(get_db)):
     """Update an existing book's details."""
-    db_book = db.query(book_sch.Book).filter(book_sch.Book.id == book_id).first()
+    db_book = db.query(Book).filter(Book.id == book_id).first()
     if db_book is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
         
@@ -65,7 +65,7 @@ def update_book(book_id: int, book_update:book_sch.BookUpdate, db: Session = Dep
 @router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_book(book_id: int, db: Session = Depends(get_db)):
     """Delete a book by ID."""
-    db_book = db.query(book_sch.Book).filter(book_sch.Book.id == book_id).first()
+    db_book = db.query(Book).filter(Book.id == book_id).first()
     if db_book is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
     

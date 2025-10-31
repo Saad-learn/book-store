@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.database import Base, engine
-from app.routes import books, authors
+from app.routes import authors_route, books_route
 
 def create_tables():
     Base.metadata.create_all(bind=engine)
@@ -14,6 +14,6 @@ app = FastAPI(
 def read_root():
     return {"message": "Welcome to the Bookstore."}
 
-app.include_router(authors.router)
-app.include_router(books.router)
+app.include_router(authors_route.router)
+app.include_router(books_route.router)
 

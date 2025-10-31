@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-from app.models import author_mdl, books_mdl
-from app import models, schemas
+from app.models import Author
 from app.database import get_db
-from app.schemas import author_sch
+from app.schemas.author_sch import AuthorDTO, AuthorCreate
 
 
 router = APIRouter(
@@ -12,31 +11,31 @@ router = APIRouter(
     tags=["Authors"]
 )
 
-@router.post("/", response_model=author_sch.Author, status_code=status.HTTP_201_CREATED)
-def create_author(author: author_sch.AuthorCreate, db: Session = Depends(get_db)):
+@router.post("/", response_model=AuthorDTO, status_code=status.HTTP_201_CREATED)
+def create_author(author: AuthorCreate, db: Session = Depends(get_db)):
     """Create a new author."""
-    db_author = models.Author(**author.model_dump())
+    db_author = Author(**author.model_dump())
     db.add(db_author)
     db.commit()
     db.refresh(db_author)
     return db_author
 
-@router.get("/", response_model=List[author_sch.Author])
+@router.get("/", response_model=List[AuthorDTO])
 def read_authors(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Retrieve a list of all authors."""
-    authors = db.query(models.Author).offset(skip).limit(limit).all()
+    authors = db.query(Author).offset(skip).limit(limit).all()
     return authors
 
-@router.get("/{author_id}", response_model=author_sch.Author)
+@router.get("/{author_id}", response_model=AuthorDTO)
 def read_author(author_id: int, db: Session = Depends(get_db)):
     """Retrieve a single author by ID."""
-    author = db.query(models.Author).filter(models.Author.id == author_id).first()
+    author = db.query(Author).filter(Author.id == author_id).first()
     if author is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Author not found")
     return author
 
-@router.put("/{author_id}", response_model=author_sch.Author)
-def update_author(author_id: int, author_update: author_sch.AuthorUpdate, db: Session = Depends(get_db)):
+@router.put("/{author_id}", response_model=AuthorDTO)
+def update_author(author_id: int, author_update: AuthorDTO, db: Session = Depends(get_db)):
     """Update an existing author's details."""
     db_author = read_author(author_id=author_id, db=db) # Reuses the read logic for existence check
 

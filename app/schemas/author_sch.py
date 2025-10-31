@@ -16,7 +16,7 @@ class AuthorUpdate(AuthorBase):
     last_name: Optional[str] = None
     bio: Optional[str] = None
 
-class Author(AuthorBase):
+class AuthorDTO(AuthorBase):
     id: int
 
     class Config:
